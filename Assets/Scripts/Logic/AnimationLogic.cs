@@ -53,7 +53,6 @@ public class AnimationLogic : InterfaceLogicBase
 
     private void OnAttackStart(IMeleeAttacker animated)
     {
-        Debug.Log($"PlayAnimation(animated as IAnimated, AttackStart);");
         PlayAnimation(animated as IAnimated, "AttackStart");
     }
 

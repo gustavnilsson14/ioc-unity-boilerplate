@@ -32,7 +32,9 @@ public class JumpLogic : InterfaceLogicBase
         if (!CanJump(jumper, out bool isAirJump))
             return false;
         GetJumpEvent(jumper, isAirJump).Invoke(jumper);
-        jumper.GetGameObject().GetComponent<Rigidbody>().AddForce(Vector3.up * jumper.GetJumpForce(), ForceMode.Impulse);
+        Vector3 velocity = jumper.GetGameObject().GetComponent<Rigidbody>().velocity;
+        velocity = new Vector3(velocity.x, jumper.GetJumpForce(), velocity.z);
+        jumper.GetGameObject().GetComponent<Rigidbody>().velocity = velocity;
         return true;
     }
 

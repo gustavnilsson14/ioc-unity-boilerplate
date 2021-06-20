@@ -239,6 +239,7 @@ MonoBehaviour:
   inputMappings: []
   axisMappings: []
   meleeCooldown: 0
+  speed: 10
 --- !u!1 &132792981
 GameObject:
   m_ObjectHideFlags: 0
@@ -649,10 +650,10 @@ MonoBehaviour:
   burstInterval: 0
   projectileSpawnMode: 0
   inputMappings:
-  - keyCode: 32
+  - keyCode: 122
     inputType: 0
     inputHandlingType: 2
-  - keyCode: 122
+  - keyCode: 32
     inputType: 1
     inputHandlingType: 0
   - keyCode: 120
@@ -664,6 +665,7 @@ MonoBehaviour:
   - axisName: Vertical
     axisType: 1
   meleeCooldown: 0
+  speed: 10
 --- !u!114 &392660115
 MonoBehaviour:
   m_ObjectHideFlags: 0
