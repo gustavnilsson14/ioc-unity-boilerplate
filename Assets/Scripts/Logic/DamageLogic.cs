@@ -33,23 +33,22 @@ public class DamageLogic : InterfaceLogicBase
 
     private void InitArmor(GameObject newInstance)
     {
-        if (!newInstance.TryGetComponent<IArmor>(out IArmor armor))
+        if (!newInstance.TryGetComponent(out IArmor armor))
             return;
         armor.currentDurability = armor.GetMaxDurability();
     }
 
-    internal void TakeDamage(Collision collision, IDamageSource damageSource)
+    public void TakeDamage(Collision collision, IDamageSource damageSource)
     {
-        Debug.Log($"TakeDamage(Collision {collision.rigidbody}, IDamageSource {damageSource})");
+        if (collision.rigidbody == null)
+            return;
         if (!collision.rigidbody.TryGetComponent(out IDamageable damageable))
             return;
-        Debug.Log($"if (!collision.collider.TryGetComponent(out IDamageable {damageable}))");
         TakeDamage(damageable, damageSource);
     }
 
     public void TakeDamage(IDamageable damageable, IDamageSource damageSource)
     {
-        Debug.Log($"IDamageable {damageable}, IDamageSource {damageSource} {damageable.alive}");
         if (!damageable.alive)
             return;
         if (WasAbsorbed(damageable, damageSource, out int damageRemaining)) {
@@ -58,7 +57,6 @@ public class DamageLogic : InterfaceLogicBase
         }
         damageable.onHit.Invoke(damageable, damageSource);
         damageable.currentHealth = Mathf.Clamp(damageable.currentHealth - damageRemaining, 0, int.MaxValue);
-        Debug.Log($"damageable.currentHealth {damageable.currentHealth}");
         if (damageable.currentHealth > 0)
             return;
         Die(damageable, damageSource);

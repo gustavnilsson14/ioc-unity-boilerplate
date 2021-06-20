@@ -72,7 +72,7 @@ public class MovementLogic : InterfaceLogicBase
             return;
         dollyMover.onTrackEndReached.Invoke(dollyMover);
         if (dollyMover.GetDestroyOnTrackFinished())
-            Destroy(dollyMover.GetGameObject());
+            Destroy(dollyMover.GetGameObject(), dollyMover.destroyDelay);
     }
 
     private void Move(IMover mover)
@@ -157,6 +157,7 @@ public interface IMover : IBase
 }
 public interface IDollyMover : IBase
 {
+    float destroyDelay { get; set; }
     bool GetDestroyOnTrackFinished();
     CinemachineDollyCart GetCart();
     CinemachinePathBase GetTrack();

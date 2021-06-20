@@ -20,7 +20,12 @@ public class PrefabFactory : InterfaceLogicBase
     }
     public GameObject Create(GameObject prefab, Transform parent)
     {
+        return Create(prefab, parent, parent);
+    }
+    public GameObject Create(GameObject prefab, Transform parent, Transform origin)
+    {
         GameObject newGameObject = Instantiate(prefab, parent);
+        newGameObject.transform.position = origin.position;
         onInstantiate.Invoke(newGameObject);
         return newGameObject;
     }

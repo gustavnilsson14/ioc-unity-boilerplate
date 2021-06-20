@@ -9,6 +9,7 @@ public class BasicDollyMover : BehaviourBase, IDollyMover
     public CinemachineDollyCart cart;
 
     public DollyMoveEvent onTrackEndReached { get; set; }
+    public float destroyDelay { get; set; }
 
     public CinemachineDollyCart GetCart() => cart;
 
