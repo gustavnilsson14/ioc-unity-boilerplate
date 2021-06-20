@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
@@ -34,10 +35,14 @@ public class InterfaceLogicBase : MonoBehaviour
     protected virtual void RegisterListeners() {
         PrefabFactory.I.onInstantiate.AddListener(OnInstantiate);
     }
-    protected virtual void OnInstantiate(GameObject newInstance) {
+    protected virtual void OnInstantiate(GameObject newInstance)
+    {
         if (!newInstance.TryGetComponent(out IBase newBase))
             return;
         myInstances.Add(newInstance);
+        newInstance.GetComponents<IBase>().ToList().ForEach(x => OnInstantiate(newInstance, x));
+    }
+    protected virtual void OnInstantiate(GameObject newInstance, IBase newBase) {
         if (newBase.onDestroy != null) {
             newBase.onDestroy.AddListener(UnRegister);
             return;

@@ -8,14 +8,14 @@ public class AnimationLogic : InterfaceLogicBase
 {
     public static AnimationLogic I;
 
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitAnimated(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitAnimated(newBase as IAnimated);
     }
-    private void InitAnimated(GameObject newInstance)
+    private void InitAnimated(IAnimated animated)
     {
-        if (!newInstance.TryGetComponent(out IAnimated animated))
+        if (animated == null)
             return;
         if (!GetAnimator(animated, out Animator animator))
         {
@@ -26,7 +26,14 @@ public class AnimationLogic : InterfaceLogicBase
             RegisterDamageableAnimations(animated as IDamageable);
         if (animated is IMeleeAttacker)
             RegisterMeleeAnimations(animated as IMeleeAttacker);
+        if (animated is IShooter)
+            RegisterShooterAnimations(animated as IShooter);
         animated.animator = animator;
+    }
+
+    private void RegisterShooterAnimations(IShooter shooter)
+    {
+        shooter.onSpawn.AddListener(OnShoot);
     }
 
     private void RegisterMeleeAnimations(IMeleeAttacker meleeAttacker)
@@ -59,6 +66,11 @@ public class AnimationLogic : InterfaceLogicBase
     private void OnAttackFinish(IMeleeAttacker animated)
     {
         PlayAnimation(animated as IAnimated, "AttackFinish");
+    }
+
+    private void OnShoot(ISpawner animated, GameObject arg1)
+    {
+        PlayAnimation(animated as IAnimated, "Shoot");
     }
 
 

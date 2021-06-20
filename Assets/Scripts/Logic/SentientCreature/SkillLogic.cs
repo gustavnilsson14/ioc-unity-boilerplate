@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 public enum SkillType
 { 
-    MELEE, CONSTRUCTION, PERSUASION, PEWPEW, APPRAISAL, TRICKS, HISTORY
+    MELEE, CONSTRUCTION, PERSUASION, PEWPEW, APPRAISAL, TRICKS, HISTORY, SHOOTING
 }
 public enum SkillCheckQuality 
 { 
@@ -38,30 +38,30 @@ public class SkillLogic : InterfaceLogicBase
         }
     }
 
-    protected override void OnInstantiate(GameObject newInstance)
+
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitSkilled(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitSkilled(newBase as ISkilled);
     }
-    private void InitSkilled(GameObject newInstance)
+    private void InitSkilled(ISkilled skilled)
     {
-        if (!newInstance.TryGetComponent<ISkilled>(out ISkilled skilled))
+        if (skilled == null)
             return;
         skilled.onExperienceGain = new SkillEvent();
         skilled.onLevelUp = new SkillEvent();
         skilled.onSkillCheck = new SkillCheckEvent();
-        skilled.skills = new List<Skill>();
         AddSkills(skilled);
     }
 
     private void AddSkills(ISkilled skilled)
     {
-        skillTypes.ForEach(x => skilled.skills.Add(new Skill(x)));
+        skillTypes.ForEach(x => skilled.GetSkills().Add(new Skill(x)));
     }
 
     public bool SkillCheck(out SkillCheckQuality quality, ISkilled skilled, SkillType skillType, int difficulty, SkillCheckQuality requirement = SkillCheckQuality.BAD) {
         quality = SkillCheckQuality.FAIL;
-        Skill skill = skilled.skills.Find(x => x.skillType == skillType);
+        Skill skill = skilled.GetSkills().Find(x => x.skillType == skillType);
         int roll = skill.value + random.Next(skillMin, skillMax) + GetRollBonus(skilled);
         if (roll < difficulty) {
             skilled.onSkillCheck.Invoke(skilled, skill, quality, false);
@@ -81,7 +81,7 @@ public class SkillLogic : InterfaceLogicBase
     }
 
     public void GainExperience(ISkilled skilled, SkillType skillType, float experience) {
-        Skill skill = skilled.skills.Find(x => x.skillType == skillType);
+        Skill skill = skilled.GetSkills().Find(x => x.skillType == skillType);
         skill.experience += experience * GetExperienceMultiplier(skilled as ISentient);
         skilled.onExperienceGain.Invoke(skilled, skill);
         if (!IsExperienceEnough(skill))
@@ -122,9 +122,18 @@ public class SkillLogic : InterfaceLogicBase
             return SkillCheckQuality.PERFECT;
         return SkillCheckQuality.MARVELLOUS;
     }
+
+    public float ReduceBySkill(ISkilled skilled, SkillType skillType, float value)
+    {
+        Skill skill = skilled.GetSkills().Find(x => x.skillType == skillType);
+        if (skill == null)
+            return value;
+        float multiplier = Mathf.Clamp((float)skill.value, 1, skillMax) / (float)skillMax;
+        return Mathf.Clamp(value - (value * multiplier), 0, float.MaxValue);
+    }
 }
-public interface ISkilled : ISentient { 
-    List<Skill> skills { get; set; }
+public interface ISkilled : ISentient {
+    List<Skill> GetSkills();
     SkillEvent onExperienceGain { get; set; }
     SkillEvent onLevelUp { get; set; }
     SkillCheckEvent onSkillCheck { get; set; }

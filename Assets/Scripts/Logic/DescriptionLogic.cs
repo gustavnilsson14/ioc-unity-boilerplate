@@ -7,15 +7,14 @@ using UnityEngine.Events;
 public class DescriptionLogic : InterfaceLogicBase
 {
     public static DescriptionLogic I;
-
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitDescribed(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitDescribed(newBase as IDescribed);
     }
-    private void InitDescribed(GameObject newInstance)
+    private void InitDescribed(IDescribed described)
     {
-        if (!newInstance.TryGetComponent<IDescribed>(out IDescribed described))
+        if (described == null)
             return;
         described.onDescriptionChange = new TextEvent();
     }

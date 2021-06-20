@@ -11,16 +11,16 @@ public enum DamageType {
 public class DamageLogic : InterfaceLogicBase
 {
     public static DamageLogic I;
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitDamageable(newInstance);
-        InitArmor(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitDamageable(newBase as IDamageable);
+        InitArmor(newBase as IArmor);
     }
 
-    private void InitDamageable(GameObject newInstance)
+    private void InitDamageable(IDamageable damageable)
     {
-        if (!newInstance.TryGetComponent(out IDamageable damageable))
+        if (damageable == null)
             return;
         damageable.currentHealth = damageable.GetMaxHealth();
         damageable.alive = true;
@@ -31,9 +31,9 @@ public class DamageLogic : InterfaceLogicBase
         damageable.onResist = new DamageEvent();
     }
 
-    private void InitArmor(GameObject newInstance)
+    private void InitArmor(IArmor armor)
     {
-        if (!newInstance.TryGetComponent(out IArmor armor))
+        if (armor == null)
             return;
         armor.currentDurability = armor.GetMaxDurability();
     }
@@ -105,7 +105,6 @@ public class DamageLogic : InterfaceLogicBase
     {
         damageable.alive = false;
         damageable.onDeath.Invoke(damageable, damageSource);
-        Debug.Log($"private void Die(IDamageable {damageable}, IDamageSource {damageSource})");
         Destroy(damageable.GetGameObject(), damageable.GetDecayTime());
     }
 }

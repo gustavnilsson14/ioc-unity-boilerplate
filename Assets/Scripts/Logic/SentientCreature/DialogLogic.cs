@@ -7,14 +7,14 @@ public class DialogLogic : InterfaceLogicBase
 {
     public static DialogLogic I;
 
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitDialog(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitDialog(newBase as IDialog);
     }
-    private void InitDialog(GameObject newInstance)
+    private void InitDialog(IDialog dialog)
     {
-        if (!newInstance.TryGetComponent<IDialog>(out IDialog dialog))
+        if (dialog == null)
             return;
     }
 }

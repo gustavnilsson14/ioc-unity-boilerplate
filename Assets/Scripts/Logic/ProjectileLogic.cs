@@ -14,25 +14,39 @@ public class ProjectileLogic : InterfaceLogicBase
         shooters.ForEach(x => UpdateShooter(x));
     }
 
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitShooter(newInstance);
-        InitProjectile(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitShooter(newBase as IShooter);
+        InitProjectile(newBase as IProjectile);
     }
 
-    private void InitShooter(GameObject newInstance)
+    protected override void UnRegister(IBase b)
     {
-        if (!newInstance.TryGetComponent(out IShooter shooter))
+        base.UnRegister(b);
+        if (b is IShooter)
+            shooters.Remove(b as IShooter);
+    }
+    private void InitShooter(IShooter shooter)
+    {
+        if (shooter == null)
             return;
         shooters.Add(shooter);
-        shooter.burstRateCooldown = 0;
         shooter.burstIntervalCooldown = 0;
+        shooter.onItemUse.AddListener(Shoot);
+        shooter.onItemOutOfAmmo.AddListener(Reload);
     }
 
-    private void InitProjectile(GameObject newInstance)
+    private void Reload(IUsableItem item)
     {
-        if (!newInstance.TryGetComponent(out IProjectile projectile))
+        if (!EquippedItemLogic.I.GetHandler(item, out IItemUser itemUser))
+            return;
+        EquippedItemLogic.I.Reload(itemUser);
+    }
+
+    private void InitProjectile(IProjectile projectile)
+    {
+        if (projectile == null)
             return;
         projectile.onCollision.AddListener(OnProjectileCollision);
         projectile.projectileCollider = projectile.GetGameObject().GetComponentInChildren<Collider>();
@@ -81,40 +95,52 @@ public class ProjectileLogic : InterfaceLogicBase
         return projectile.GetTrail().time;
     }
 
-    public void Shoot(IShooter shooter)
+    private void Shoot(IUsableItem item)
     {
-        if (shooter.burstRateCooldown > 0)
-            return;
+        IShooter shooter = item as IShooter;
         shooter.isBursting = true;
         shooter.burstShotsLeft = shooter.GetBurstAmount();
-        shooter.burstRateCooldown = Mathf.Clamp(shooter.GetBurstRate() + (shooter.GetBurstInterval() * shooter.GetBurstAmount()), 0.01f, float.MaxValue);
+        shooter.currentItemCooldown = shooter.GetItemCooldown();
     }
     private void UpdateShooter(IShooter shooter)
     {
-        shooter.burstRateCooldown -= Time.deltaTime;
         shooter.burstIntervalCooldown -= Time.deltaTime;
         if (!shooter.isBursting)
             return;
         if (shooter.burstIntervalCooldown > 0)
             return;
         shooter.burstShotsLeft -= 1;
-        SpawnerLogic.I.Spawn(shooter);
+        if (SpawnerLogic.I.Spawn(shooter, out GameObject newInstance))
+            ApplyProjectileSpread(shooter, newInstance);
+        
         shooter.burstIntervalCooldown = shooter.GetBurstInterval();
         if (shooter.burstShotsLeft > 0)
             return;
         shooter.isBursting = false;
     }
 
+    private void ApplyProjectileSpread(IShooter shooter, GameObject newInstance)
+    {
+        float spread = shooter.GetProjectileSpread();
+        
+        if (shooter is ISkilled)
+            spread = SkillLogic.I.ReduceBySkill(shooter as ISkilled, SkillType.SHOOTING, spread);
+        Vector3 spreadOffset = new Vector3(
+            UnityEngine.Random.Range(-spread, spread),
+            UnityEngine.Random.Range(-spread, spread),
+            UnityEngine.Random.Range(-spread, spread)
+        );
+        newInstance.transform.eulerAngles += spreadOffset;
+    }
 }
-public interface IShooter : ISpawner
+public interface IShooter : ISpawner, IUsableItem
 {
     bool isBursting { get; set; }
-    float burstRateCooldown{ get; set; }
     float burstIntervalCooldown { get; set; }
     int burstShotsLeft { get; set; }
-    float GetBurstRate();
     int GetBurstAmount();
     float GetBurstInterval();
+    float GetProjectileSpread();
 }
 public interface IProjectile : IDamageSource, IDollyMover
 {

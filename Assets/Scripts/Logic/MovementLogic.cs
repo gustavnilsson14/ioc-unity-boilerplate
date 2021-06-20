@@ -11,16 +11,17 @@ public class MovementLogic : InterfaceLogicBase
     public static MovementLogic I;
     private List<IMover> movers = new List<IMover>();
     private List<IDollyMover> dollyMovers = new List<IDollyMover>();
-    protected override void OnInstantiate(GameObject newInstance)
+
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitMover(newInstance);
-        InitDollyMover(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitMover(newBase as IMover);
+        InitDollyMover(newBase as IDollyMover);
     }
 
-    private void InitMover(GameObject newInstance)
+    private void InitMover(IMover mover)
     {
-        if (!newInstance.TryGetComponent(out IMover mover))
+        if (mover == null)
             return;
         movers.Add(mover);
         mover.hasDestination = false;
@@ -33,9 +34,9 @@ public class MovementLogic : InterfaceLogicBase
     }
 
 
-    private void InitDollyMover(GameObject newInstance)
+    private void InitDollyMover(IDollyMover dollyMover)
     {
-        if (!newInstance.TryGetComponent(out IDollyMover dollyMover))
+        if (dollyMover == null)
             return;
         if (!dollyMover.GetGameObject().TryGetComponent(out Rigidbody r))
             dollyMover.GetGameObject().AddComponent(typeof(Rigidbody));
@@ -46,18 +47,31 @@ public class MovementLogic : InterfaceLogicBase
     protected override void UnRegister(IBase b)
     {
         base.UnRegister(b);
-        if ((b is IMover))
+        if (b is IMover)
             movers.Remove(b as IMover);
-        if ((b is IDollyMover))
+        if (b is IDollyMover)
             dollyMovers.Remove(b as IDollyMover);
     }
 
     void Update()
     {
-        movers.RemoveAll(x => x == null);
         movers.ForEach(x => Move(x));
         movers.ForEach(x => SetGroundedState(x));
+        movers.ForEach(x => Rotate(x));
         dollyMovers.ForEach(x => UpdateDollyMover(x));
+    }
+
+    private void Rotate(IMover mover)
+    {
+        if (!mover.GetRotateTowardsMouse())
+            return;
+        
+        Vector3 sceenCompensation = new Vector3(Screen.width / 2, 0, Screen.height / 2);
+        Vector3 offset = Camera.main.WorldToScreenPoint(mover.GetGameObject().transform.position);
+        offset = new Vector3(offset.x, 0, offset.y) - sceenCompensation;
+        Vector3 mousePos = new Vector3(Input.mousePosition.x, 0, Input.mousePosition.y) - sceenCompensation;
+        mousePos -= new Vector3(offset.x,0, offset.z);
+        mover.GetGameObject().transform.LookAt(mover.GetGameObject().transform.position + mousePos, Vector3.up);
     }
 
     private void UpdateDollyMover(IDollyMover dollyMover)
@@ -142,6 +156,7 @@ public class MovementLogic : InterfaceLogicBase
 
 public interface IMover : IBase
 {
+    bool GetRotateTowardsMouse();
     float GetSpeed();
     Vector3 movementVector { get; set; }
     Vector3 previousMovementVector { get; set; }

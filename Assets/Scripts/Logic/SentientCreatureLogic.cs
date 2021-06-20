@@ -14,14 +14,15 @@ public class SentientCreatureLogic : InterfaceLogicBase
     public static SentientCreatureLogic I;
     private static float favorForgetThreshold = 0.1f;
 
-    protected override void OnInstantiate(GameObject newInstance)
+
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitSentient(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitSentient(newBase as ISentient);
     }
-    private void InitSentient(GameObject newInstance)
+    private void InitSentient(ISentient sentient)
     {
-        if (!newInstance.TryGetComponent<ISentient>(out ISentient sentient))
+        if (sentient == null)
             return;
         sentient.generalDisposition = sentient.GetInitialDisposition();
         sentient.currentDisposition = Disposition.Default;

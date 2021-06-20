@@ -9,7 +9,7 @@ public enum ProductDefaultOutput {
     UNCLAIMED, CONVERTER_INVENTORY
 }
 public enum ResourceType { 
-    GOLD, FISH, DIRT, LUMBER, IRON, SAND, MEEPS, DODECAHEDRONS
+    GOLD, FISH, DIRT, LUMBER, IRON, SAND, MEEPS, DODECAHEDRONS, BULLETS
 }
 public class ResourceLogic : InterfaceLogicBase
 {
@@ -38,29 +38,30 @@ public class ResourceLogic : InterfaceLogicBase
         resourceTypes = new List<Resource>() {
             new Resource(ResourceType.GOLD,basicResourcePrefab,999,1),
             new Resource(ResourceType.SAND,basicResourcePrefab,9999,1),
+            new Resource(ResourceType.BULLETS,basicResourcePrefab,9999,1),
         };
     }
 
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitResource(newInstance);
-        InitInventory(newInstance);
-        InitResourceConverter(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitResource(newBase as IResource);
+        InitInventory(newBase as IInventory);
+        InitResourceConverter(newBase as IResourceConverter);
     }
-    private void InitResource(GameObject newInstance)
+    private void InitResource(IResource resource)
     {
-        if (!newInstance.TryGetComponent<IResource>(out IResource resource))
+        if (resource == null)
             return;
         resource.onChange = new ResourceEvent();
     }
-    private void InitResourceConverter(GameObject newInstance)
+    private void InitResourceConverter(IResourceConverter resourceConverter)
     {
-        if (!newInstance.TryGetComponent<IResourceConverter>(out IResourceConverter resourceConverter))
+        if (resourceConverter == null)
             return;
-        if (!newInstance.TryGetComponent<IInventory>(out IInventory inventory))
+        if (!resourceConverter.GetGameObject().TryGetComponent(out IInventory inventory))
         {
-            Destroy(newInstance);
+            Destroy(resourceConverter.GetGameObject());
             return;
         }
         resourceConverter.onConversionStart = new ResourceConverterEvent();
@@ -71,14 +72,12 @@ public class ResourceLogic : InterfaceLogicBase
         resourceConverters.Add(resourceConverter);
     }
 
-    private void InitInventory(GameObject newInstance)
+    private void InitInventory(IInventory inventory)
     {
-        if (!newInstance.TryGetComponent(out IInventory inventory))
+        if (inventory == null)
             return;
         inventory.onChange = new InventoryEvent();
-        if (!newInstance.TryGetComponent(out IBase b))
-            return;
-        b.onDestroy.AddListener(DropInventoryExcess);
+        inventory.onDestroy.AddListener(DropInventoryExcess);
     }
 
 
@@ -214,7 +213,7 @@ public class ResourceLogic : InterfaceLogicBase
     }
     public IResource CreateResource(out IResource newStack, Resource resource, Transform parent)
     {
-        PrefabFactory.I.Create(resource.resourcePrefab, parent).TryGetComponent<IResource>(out newStack);
+        PrefabFactory.I.Create(resource.resourcePrefab, parent).TryGetComponent(out newStack);
         newStack.resourceType = resource;
         newStack.GetGameObject().name = resource.resourceType.ToString();
         return newStack;
@@ -279,10 +278,13 @@ public class ResourceLogic : InterfaceLogicBase
     public List<IResource> GetResourcesInRange(IResource resource, Vector3 position, float range = 1)
     {
         List<Collider> hits = Physics.OverlapSphere(position, range).ToList().FindAll(x => x.GetComponent<IResource>() != null);
-        Debug.Log(String.Join(",", hits));
-        Debug.Log(hits.Count);
-        List <IResource> resources = hits.Select(x => x.GetComponent<IResource>()).ToList();
+        List<IResource> resources = hits.Select(x => x.GetComponent<IResource>()).ToList();
         return resources.Where(x => x.GetGameObject().transform.parent == unclaimedContainer && x.resourceType.resourceType == resource.resourceType.resourceType).ToList();
+    }
+
+    public int GetResourceTotal(IInventory inventory, ResourceType resourceType)
+    {
+        return inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType).Sum(x => x.amount);
     }
 
     private void DropInventoryExcess(IBase inventory)

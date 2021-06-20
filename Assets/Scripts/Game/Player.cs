@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IAnimated, ISentient, ISkilled, IJumper, IShooter, IInputReciever
+public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IAnimated, ISentient, ISkilled, IJumper, IItemUser, IInputReciever
 {
     public int maxHealth;
     public bool test;
@@ -28,7 +28,6 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public Disposition generalDisposition { get; set; }
     public Disposition currentDisposition { get; set; }
     public Dictionary<int, float> bonds { get; set; }
-    public List<Skill> skills { get; set; }
     public SkillEvent onExperienceGain { get; set; }
     public SkillEvent onLevelUp { get; set; }
     public SkillCheckEvent onSkillCheck { get; set; }
@@ -51,6 +50,7 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public MeleeEvent onAttackStart { get; set; }
     public MeleeEvent onAttackFinish { get; set; }
     public float currentMeleeCooldown { get; set; }
+    public IUsableItem currentEquippedItem { get; set; }
 
     public Disposition GetInitialDisposition() => new Disposition(0.5f, 0.5f, 0.5f);
 
@@ -126,6 +126,10 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public List<AxisMapping> axisMappings;
     public float meleeCooldown;
     public float speed = 10;
+    public bool rotateTowardsMouse;
+    public float projectileSpread;
+    public List<Skill> skills = new List<Skill>();
+    public List<IUsableItem> usableItems;
 
     private void Update()
     {
@@ -174,4 +178,14 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public List<AxisMapping> GetAxisMappings() => axisMappings;
 
     public float GetMeleeCooldown() => meleeCooldown;
+
+    public bool GetRotateTowardsMouse() => rotateTowardsMouse;
+
+    public float GetProjectileSpread() => projectileSpread;
+
+    public List<Skill> GetSkills() => skills;
+
+    public List<IUsableItem> GetUsableItems() => usableItems;
+
+    public List<IUsableItem> SetUsableItems(List<IUsableItem> usableItems) => this.usableItems = usableItems;
 }

@@ -11,11 +11,15 @@ public enum InputType
     JUMP,
     MELEE,
     OPEN_INVENTORY,
+    SWAP_ITEM,
+    RELOAD,
+    USE_ITEM
 }
 public enum AxisType
 {
     MOVE_X,
     MOVE_Y,
+    SWAP_ITEM
 }
 public enum InputHandlingType
 {
@@ -23,20 +27,26 @@ public enum InputHandlingType
     GET_KEY_UP,
     GET_KEY,
 }
+public enum MouseHandlingType
+{
+    GET_MOUSE_BUTTON_DOWN,
+    GET_MOUSE_BUTTON_UP,
+    GET_MOUSE_BUTTON
+}
 
 public class InputLogic : InterfaceLogicBase
 {
     public static InputLogic I;
     public List<IInputReciever> inputRecievers = new List<IInputReciever>();
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitInputReciever(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitInputReciever(newBase as IInputReciever);
     }
 
-    private void InitInputReciever(GameObject newInstance)
+    private void InitInputReciever(IInputReciever inputReciever)
     {
-        if (!newInstance.TryGetComponent<IInputReciever>(out IInputReciever inputReciever))
+        if (inputReciever == null)
             return;
         inputRecievers.Add(inputReciever);
     }
@@ -56,12 +66,49 @@ public class InputLogic : InterfaceLogicBase
     {
         foreach (IInputReciever inputReciever in inputRecievers)
         {
-            HandleShooterInput(inputReciever);
             HandleMoverInput(inputReciever);
             HandleJumperInput(inputReciever);
             HandleMeleeInput(inputReciever);
+            HandleSwapItemInput(inputReciever);
+            HandleReloadInput(inputReciever);
+            HandleUseItemInput(inputReciever);
         }
+    }
 
+    private void HandleUseItemInput(IInputReciever inputReciever)
+    {
+        if (!(inputReciever is IItemUser))
+            return;
+        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.USE_ITEM))
+        {
+            if (!GetInput(inputMapping))
+                continue;
+            EquippedItemLogic.I.Use(inputReciever as IItemUser);
+        }
+    }
+
+    private void HandleReloadInput(IInputReciever inputReciever)
+    {
+        if (!(inputReciever is IItemUser))
+            return;
+        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.RELOAD))
+        {
+            if (!GetInput(inputMapping))
+                continue;
+            EquippedItemLogic.I.Reload(inputReciever as IItemUser);
+        }
+    }
+
+    private void HandleSwapItemInput(IInputReciever inputReciever)
+    {
+        if (!(inputReciever is IItemUser))
+            return;
+        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.SWAP_ITEM))
+        {
+            if (!GetInput(inputMapping))
+                continue;
+            EquippedItemLogic.I.SwapEquippedItem(inputReciever as IItemUser);
+        }
     }
 
     private void HandleMoverInput(IInputReciever inputReciever)
@@ -77,19 +124,8 @@ public class InputLogic : InterfaceLogicBase
         {
             movementVector += new Vector3(0, 0, Input.GetAxis(axisMapping.axisName));
         }
-        (inputReciever as IMover).movementVector = movementVector;
-    }
 
-    private void HandleShooterInput(IInputReciever inputReciever)
-    {
-        if (!(inputReciever is IShooter))
-            return;
-        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.SHOOT))
-        {
-            if (!GetKeyInput(inputMapping))
-                continue;
-            ProjectileLogic.I.Shoot(inputReciever as IShooter);
-        }
+        (inputReciever as IMover).movementVector = movementVector;
     }
 
     private void HandleJumperInput(IInputReciever inputReciever)
@@ -98,7 +134,7 @@ public class InputLogic : InterfaceLogicBase
             return;
         foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.JUMP))
         {
-            if (!GetKeyInput(inputMapping))
+            if (!GetInput(inputMapping))
                 continue;
             JumpLogic.I.Jump(inputReciever as IJumper);
         }
@@ -111,11 +147,32 @@ public class InputLogic : InterfaceLogicBase
             return;
         foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.MELEE))
         {
-            if (!GetKeyInput(inputMapping))
+            if (!GetInput(inputMapping))
                 continue;
             MeleeLogic.I.Attack(inputReciever as IMeleeAttacker);
         }
 
+    }
+
+    private bool GetInput(InputMapping inputMapping)
+    {
+        if (inputMapping.isMouse)
+            return GetMouseInput(inputMapping);
+        return GetKeyInput(inputMapping);
+    }
+
+    private bool GetMouseInput(InputMapping inputMapping)
+    {
+        switch (inputMapping.mouseHandlingType)
+        {
+            case MouseHandlingType.GET_MOUSE_BUTTON_DOWN:
+                return Input.GetMouseButtonDown(inputMapping.mouseButton);
+            case MouseHandlingType.GET_MOUSE_BUTTON_UP:
+                return Input.GetMouseButtonUp(inputMapping.mouseButton);
+            case MouseHandlingType.GET_MOUSE_BUTTON:
+                return Input.GetMouseButton(inputMapping.mouseButton);
+        }
+        return false;
     }
 
     private bool GetKeyInput(InputMapping inputMapping){
@@ -130,20 +187,29 @@ public class InputLogic : InterfaceLogicBase
         }
         return false;
     }
-
 }
 [System.Serializable]
 public class InputMapping
 {
+    public bool isMouse = false;
     public KeyCode keyCode;
+    public int mouseButton;
     public InputType inputType;
     public InputHandlingType inputHandlingType;
+    public MouseHandlingType mouseHandlingType;
 }
 [System.Serializable]
 public class AxisMapping
 {
     public string axisName;
     public AxisType axisType;
+}
+[System.Serializable]
+public class MouseMapping
+{
+    public KeyCode keyCode;
+    public InputType inputType;
+    public InputHandlingType inputHandlingType;
 }
 public interface IInputReciever : IBase
 {

@@ -23,6 +23,11 @@ public class BasicMover : BehaviourBase, IMover
         throw new System.NotImplementedException();
     }
 
+    public bool GetRotateTowardsMouse()
+    {
+        throw new System.NotImplementedException();
+    }
+
     public float GetSpeed() => speed;
 
     public Transform GetTransform() => transform;

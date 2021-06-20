@@ -12,19 +12,31 @@ public class SpawnerLogic : InterfaceLogicBase
 {
     public static SpawnerLogic I;
     public List<ISpawner> spawners = new List<ISpawner>();
-    protected override void OnInstantiate(GameObject newInstance)
+
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitSpawner(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitSpawner(newBase as ISpawner);
     }
 
-    private void InitSpawner(GameObject newInstance)
+    private void InitSpawner(ISpawner spawner)
     {
-        if (!newInstance.TryGetComponent(out ISpawner spawner))
+        if (spawner == null)
             return;
         spawners.Add(spawner);
         spawner.onSpawn = new SpawnEvent();
         spawner.currentRoundRobinIndex = 0;
+    }
+
+    public bool Spawn(ISpawner spawner, out GameObject newInstance)
+    {
+        newInstance = null;
+        if (!GetPrefab(spawner, out GameObject prefab))
+            return false;
+        newInstance = PrefabFactory.I.Create(prefab, transform, spawner.GetSpawnPoint());
+        newInstance.transform.rotation = spawner.GetSpawnPoint().rotation;
+        spawner.onSpawn.Invoke(spawner, newInstance);
+        return true;
     }
 
     public void Spawn(ISpawner spawner)
@@ -32,6 +44,7 @@ public class SpawnerLogic : InterfaceLogicBase
         if (!GetPrefab(spawner, out GameObject prefab))
             return;
         GameObject newInstance = PrefabFactory.I.Create(prefab, transform, spawner.GetSpawnPoint());
+        newInstance.transform.rotation = spawner.GetSpawnPoint().rotation;
         spawner.onSpawn.Invoke(spawner, newInstance);
     }
 

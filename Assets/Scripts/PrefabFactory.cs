@@ -8,10 +8,11 @@ public class PrefabFactory : InterfaceLogicBase
 {
     public static PrefabFactory I;
     public InstantiateEvent onInstantiate = new InstantiateEvent();
+    public Transform gameRoot;
 
     protected override void PostStart()
     {
-        Resources.FindObjectsOfTypeAll(typeof(GameObject)).ToList().ForEach(x => onInstantiate.Invoke(x as GameObject));
+        GameObject.FindObjectsOfType(typeof(GameObject)).ToList().ForEach(x => onInstantiate.Invoke(x as GameObject));
     }
 
     public GameObject Create(GameObject prefab)

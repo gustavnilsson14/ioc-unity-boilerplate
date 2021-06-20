@@ -10,14 +10,14 @@ public class MeleeLogic : InterfaceLogicBase
     public static MeleeLogic I;
     public List<IMeleeAttacker> meleeAttackers = new List<IMeleeAttacker>();
 
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitMeleeAttacker(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitMeleeAttacker(newBase as IMeleeAttacker);
     }
-    private void InitMeleeAttacker(GameObject newInstance)
+    private void InitMeleeAttacker(IMeleeAttacker meleeAttacker)
     {
-        if (!newInstance.TryGetComponent(out IMeleeAttacker meleeAttacker))
+        if (meleeAttacker == null)
             return;
         meleeAttackers.Add(meleeAttacker);
         meleeAttacker.onAttackStart = new MeleeEvent();
@@ -77,5 +77,9 @@ public interface IMeleeAttacker : IDamageSource
     SphereCollider GetDamageCollider();
     float GetMeleeCooldown();
     float currentMeleeCooldown { get; set; }
+}
+public interface IShield : IDamageable
+{
+    
 }
 public class MeleeEvent : UnityEvent<IMeleeAttacker> { }

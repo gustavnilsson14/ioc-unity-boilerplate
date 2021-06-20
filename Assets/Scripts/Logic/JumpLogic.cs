@@ -8,15 +8,14 @@ using UnityEngine.Events;
 public class JumpLogic : InterfaceLogicBase
 {
     public static JumpLogic I;
-
-    protected override void OnInstantiate(GameObject newInstance)
+    protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
-        base.OnInstantiate(newInstance);
-        InitJumper(newInstance);
+        base.OnInstantiate(newInstance, newBase);
+        InitJumper(newBase as IJumper);
     }
-    private void InitJumper(GameObject newInstance)
+    private void InitJumper(IJumper jumper)
     {
-        if (!newInstance.TryGetComponent<IJumper>(out IJumper jumper))
+        if (jumper == null)
             return;
         jumper.onJump = new JumpEvent();
         jumper.onAirJump = new JumpEvent();
