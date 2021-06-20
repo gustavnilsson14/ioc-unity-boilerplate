@@ -15,7 +15,7 @@ public class AnimationLogic : InterfaceLogicBase
     }
     private void InitAnimated(GameObject newInstance)
     {
-        if (!newInstance.TryGetComponent<IAnimated>(out IAnimated animated))
+        if (!newInstance.TryGetComponent(out IAnimated animated))
             return;
         if (!GetAnimator(animated, out Animator animator))
         {
@@ -23,8 +23,16 @@ public class AnimationLogic : InterfaceLogicBase
             return;
         }
         if (animated is IDamageable)
-            RegisterDamageableAnimations((animated as IDamageable));
+            RegisterDamageableAnimations(animated as IDamageable);
+        if (animated is IMeleeAttacker)
+            RegisterMeleeAnimations(animated as IMeleeAttacker);
         animated.animator = animator;
+    }
+
+    private void RegisterMeleeAnimations(IMeleeAttacker meleeAttacker)
+    {
+        meleeAttacker.onAttackStart.AddListener(OnAttackStart);
+        meleeAttacker.onAttackFinish.AddListener(OnAttackFinish);
     }
 
     private void RegisterDamageableAnimations(IDamageable damageable)
@@ -35,17 +43,29 @@ public class AnimationLogic : InterfaceLogicBase
 
     private void OnHit(IDamageable animated, IDamageSource damageSource)
     {
-        PlayAnimation((animated as IAnimated), "Hit");
+        PlayAnimation(animated as IAnimated, "Hit");
     }
 
     private void OnDeath(IDamageable animated, IDamageSource damageSource)
     {
-        PlayAnimation((animated as IAnimated), "Death");
+        PlayAnimation(animated as IAnimated, "Death");
     }
+
+    private void OnAttackStart(IMeleeAttacker animated)
+    {
+        Debug.Log($"PlayAnimation(animated as IAnimated, AttackStart);");
+        PlayAnimation(animated as IAnimated, "AttackStart");
+    }
+
+    private void OnAttackFinish(IMeleeAttacker animated)
+    {
+        PlayAnimation(animated as IAnimated, "AttackFinish");
+    }
+
 
     private bool GetAnimator(IAnimated animated, out Animator animator)
     {
-        if (animated.GetGameObject().TryGetComponent<Animator>(out animator))
+        if (animated.GetGameObject().TryGetComponent(out animator))
             return true;
         animator = animated.GetGameObject().GetComponentInChildren<Animator>();
         return animator != null;

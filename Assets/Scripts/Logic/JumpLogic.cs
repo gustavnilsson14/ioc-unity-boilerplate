@@ -19,6 +19,7 @@ public class JumpLogic : InterfaceLogicBase
         if (!newInstance.TryGetComponent<IJumper>(out IJumper jumper))
             return;
         jumper.onJump = new JumpEvent();
+        jumper.onAirJump = new JumpEvent();
         jumper.onLand.AddListener(OnJumperLand);
     }
 
@@ -28,20 +29,29 @@ public class JumpLogic : InterfaceLogicBase
     }
 
     public bool Jump(IJumper jumper) {
-        if (!CanJump(jumper))
+        if (!CanJump(jumper, out bool isAirJump))
             return false;
-        jumper.onJump.Invoke(jumper);
+        GetJumpEvent(jumper, isAirJump).Invoke(jumper);
         jumper.GetGameObject().GetComponent<Rigidbody>().AddForce(Vector3.up * jumper.GetJumpForce(), ForceMode.Impulse);
         return true;
     }
 
-    private bool CanJump(IJumper jumper)
+    private JumpEvent GetJumpEvent(IJumper jumper, bool isAirJump)
     {
+        if (isAirJump)
+            return jumper.onAirJump;
+        return jumper.onJump;
+    }
+
+    private bool CanJump(IJumper jumper, out bool isAirJump)
+    {
+        isAirJump = false;
         if (jumper.isGrounded)
             return true;
         if (jumper.airJumps == 0)
             return false;
         jumper.airJumps--;
+        isAirJump = true;
         return true;
     }
 
@@ -55,6 +65,7 @@ public interface IJumper : IMover
     float GetJumpForce();
     int GetMaxAirJumps();
     JumpEvent onJump { get; set; }
+    JumpEvent onAirJump { get; set; }
     int airJumps { get; set; }
 }
 public class JumpEvent : UnityEvent<IJumper> { }

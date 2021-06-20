@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IAnimated, ISentient, ISkilled, IJumper, IShooter
+public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IAnimated, ISentient, ISkilled, IJumper, IShooter, IInputReciever
 {
     public int maxHealth;
     public bool test;
@@ -47,6 +47,10 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public float burstRateCooldown { get; set; }
     public float burstIntervalCooldown { get; set; }
     public int burstShotsLeft { get; set; }
+    public JumpEvent onAirJump { get; set; }
+    public MeleeEvent onAttackStart { get; set; }
+    public MeleeEvent onAttackFinish { get; set; }
+    public float currentMeleeCooldown { get; set; }
 
     public Disposition GetInitialDisposition() => new Disposition(0.5f, 0.5f, 0.5f);
 
@@ -59,7 +63,7 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
 
     public List<IResource> GetResources() => GetComponentsInChildren<IResource>().ToList();
 
-    public float GetSpeed() => 3;
+    public float GetSpeed() => speed;
 
     public int GetMaxFocus() => maxFocus;
 
@@ -84,7 +88,7 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
 
     public Transform GetSpawnPoint() => projectileOrigin;
 
-    public SpawnMode GetSpawnMode() => SpawnMode.ALWAYS_FIRST_PREFAB;
+    public SpawnMode GetSpawnMode() => projectileSpawnMode;
 
     public bool testAdd = false;
     public bool testMelee = false;
@@ -117,15 +121,11 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public float burstRate;
     public int burstAmount;
     public float burstInterval;
-
-
-
-
-
-
-
-
-
+    public SpawnMode projectileSpawnMode;
+    public List<InputMapping> inputMappings;
+    public List<AxisMapping> axisMappings;
+    public float meleeCooldown;
+    public float speed = 10;
 
     private void Update()
     {
@@ -133,11 +133,6 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
         {
             testMelee = false;
             MeleeLogic.I.Attack(this);
-        }
-        if (testShoot)
-        {
-            testShoot = false;
-            ProjectileLogic.I.Shoot(this);
         }
         if (testSpend)
         {
@@ -168,15 +163,15 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
             testTask = false;
             SentientCreatureLogic.I.AddTask(this, new Task(task));
         }
-        if (testJump)
-        {
-            testJump = false;
-            JumpLogic.I.Jump(this);
+        if (test) {
+            test = false;
+            DamageLogic.I.TakeDamage(this, this);
         }
-        if (!test)
-            return;
-        test = false;
-        DamageLogic.I.TakeDamage(this, this);
     }
 
+    public List<InputMapping> GetInputMappings() => inputMappings;
+
+    public List<AxisMapping> GetAxisMappings() => axisMappings;
+
+    public float GetMeleeCooldown() => meleeCooldown;
 }

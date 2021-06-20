@@ -31,7 +31,8 @@ public class SpawnerLogic : InterfaceLogicBase
     {
         if (!GetPrefab(spawner, out GameObject prefab))
             return;
-        PrefabFactory.I.Create(prefab, transform, spawner.GetSpawnPoint());
+        GameObject newInstance = PrefabFactory.I.Create(prefab, transform, spawner.GetSpawnPoint());
+        spawner.onSpawn.Invoke(spawner, newInstance);
     }
 
     private bool GetPrefab(ISpawner spawner, out GameObject prefab)
@@ -66,4 +67,4 @@ public interface ISpawner {
     SpawnMode GetSpawnMode();
     int currentRoundRobinIndex { get; set; }
 }
-public class SpawnEvent : UnityEvent<ISpawner> { }
+public class SpawnEvent : UnityEvent<ISpawner, GameObject> { }

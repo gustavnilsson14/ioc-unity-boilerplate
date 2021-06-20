@@ -87,7 +87,7 @@ public class ProjectileLogic : InterfaceLogicBase
             return;
         shooter.isBursting = true;
         shooter.burstShotsLeft = shooter.GetBurstAmount();
-        shooter.burstRateCooldown = shooter.GetBurstRate() + (shooter.GetBurstInterval() * shooter.GetBurstAmount());
+        shooter.burstRateCooldown = Mathf.Clamp(shooter.GetBurstRate() + (shooter.GetBurstInterval() * shooter.GetBurstAmount()), 0.01f, float.MaxValue);
     }
     private void UpdateShooter(IShooter shooter)
     {

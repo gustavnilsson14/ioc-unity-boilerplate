@@ -50,7 +50,6 @@ public class MovementLogic : InterfaceLogicBase
             movers.Remove(b as IMover);
         if ((b is IDollyMover))
             dollyMovers.Remove(b as IDollyMover);
-
     }
 
     void Update()
