@@ -10,6 +10,7 @@ public class MovementLogic : InterfaceLogicBase
 {
     public static MovementLogic I;
     private List<IMover> movers = new List<IMover>();
+    private List<IDasher> dashers = new List<IDasher>();
     private List<IDollyMover> dollyMovers = new List<IDollyMover>();
 
     protected override void OnInstantiate(GameObject newInstance, IBase newBase)
@@ -17,6 +18,7 @@ public class MovementLogic : InterfaceLogicBase
         base.OnInstantiate(newInstance, newBase);
         InitMover(newBase as IMover);
         InitDollyMover(newBase as IDollyMover);
+        InitDasher(newBase as IDasher);
     }
 
     private void InitMover(IMover mover)
@@ -43,6 +45,14 @@ public class MovementLogic : InterfaceLogicBase
         dollyMover.onTrackEndReached = new DollyMoveEvent();
         dollyMovers.Add(dollyMover);
     }
+    private void InitDasher(IDasher dasher)
+    {
+        if (dasher == null)
+            return;
+        dashers.Add(dasher);
+        dasher.onDashEnd = new DashEvent();
+        dasher.onDashStart = new DashEvent();
+    }
 
     protected override void UnRegister(IBase b)
     {
@@ -51,6 +61,8 @@ public class MovementLogic : InterfaceLogicBase
             movers.Remove(b as IMover);
         if (b is IDollyMover)
             dollyMovers.Remove(b as IDollyMover);
+        if (b is IDasher)
+            dashers.Remove(b as IDasher);
     }
 
     void Update()
@@ -58,7 +70,17 @@ public class MovementLogic : InterfaceLogicBase
         movers.ForEach(x => Move(x));
         movers.ForEach(x => SetGroundedState(x));
         movers.ForEach(x => Rotate(x));
+        dashers.ForEach(x => UpdateDasher(x));
         dollyMovers.ForEach(x => UpdateDollyMover(x));
+    }
+
+    private void UpdateDasher(IDasher dasher)
+    {
+        dasher.currentDashCooldown -= Time.deltaTime;
+        float previous = dasher.currentDashDuration;
+        dasher.currentDashDuration -= Time.deltaTime;
+        if (previous > 0 && dasher.currentDashDuration < 0)
+            dasher.onDashEnd.Invoke(dasher);
     }
 
     private void Rotate(IMover mover)
@@ -99,7 +121,7 @@ public class MovementLogic : InterfaceLogicBase
             return;
         }
         Rigidbody rigidbody = mover.GetGameObject().GetComponent<Rigidbody>();
-        rigidbody.MovePosition(rigidbody.transform.position + (mover.movementVector * mover.GetSpeed() * Time.deltaTime));
+        rigidbody.MovePosition(rigidbody.transform.position + (mover.movementVector * GetSpeed(mover) * Time.deltaTime));
         mover.onMove.Invoke(mover);
     }
 
@@ -118,7 +140,7 @@ public class MovementLogic : InterfaceLogicBase
         if (!mover.hasDestination)
             return;
         float distance = Vector3.Distance(flattenedPosition, flattenedDestination);
-        if (distance > mover.GetSpeed() * Time.deltaTime)
+        if (distance > GetSpeed(mover) * Time.deltaTime)
             return;
         mover.hasDestination = false;
         go.transform.position += mover.movementVector * distance;
@@ -152,6 +174,29 @@ public class MovementLogic : InterfaceLogicBase
         }
         mover.isGrounded = false;
     }
+
+    public void Dash(IDasher dasher) {
+        if (dasher.currentDashCooldown > 0)
+            return;
+        if (dasher is IDodger)
+            DamageLogic.I.StartInvulnerability(dasher as IDodger);
+        dasher.currentDashCooldown = dasher.GetDashCooldown();
+        dasher.currentDashDuration = dasher.GetDashDuration();
+    }
+
+    public float GetSpeed(IMover mover) {
+        float multiplier = 1;
+        if (mover is IDasher) {
+            if ((mover as IDasher).currentDashDuration > 0)
+                multiplier *= (mover as IDasher).GetDashSpeedMultiplier();
+        }
+        if (mover is ISentient) {
+            ISentient sentient = (mover as ISentient);
+            float stress = SentientCreatureLogic.I.GetTotalDisposition(sentient).stress;
+            multiplier *= stress + 0.5f;
+        }
+        return mover.GetSpeed() * multiplier;
+    }
 }
 
 public interface IMover : IBase
@@ -177,5 +222,17 @@ public interface IDollyMover : IBase
     CinemachinePathBase GetTrack();
     DollyMoveEvent onTrackEndReached { get; set; }
 }
+public interface IDasher : IMover
+{
+    float GetDashSpeedMultiplier();
+    float GetDashCooldown();
+    float GetDashDuration();
+    float currentDashCooldown { get; set; }
+    float currentDashDuration { get; set; }
+    DashEvent onDashStart { get; set; }
+    DashEvent onDashEnd { get; set; }
+}
+public interface IDodger : IDasher, IInvulnerable { }
 public class MoveEvent : UnityEvent<IMover> { }
+public class DashEvent : UnityEvent<IDasher> { }
 public class DollyMoveEvent : UnityEvent<IDollyMover> { }

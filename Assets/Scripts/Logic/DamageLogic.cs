@@ -11,11 +11,13 @@ public enum DamageType {
 public class DamageLogic : InterfaceLogicBase
 {
     public static DamageLogic I;
+    public List<IInvulnerable> invulnerables = new List<IInvulnerable>();
     protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
         base.OnInstantiate(newInstance, newBase);
         InitDamageable(newBase as IDamageable);
         InitArmor(newBase as IArmor);
+        InitInvulnerable(newBase as IInvulnerable);
     }
 
     private void InitDamageable(IDamageable damageable)
@@ -37,14 +39,60 @@ public class DamageLogic : InterfaceLogicBase
             return;
         armor.currentDurability = armor.GetMaxDurability();
     }
+    private void InitInvulnerable(IInvulnerable invulnerable)
+    {
+        if (invulnerable == null)
+            return;
+        invulnerables.Add(invulnerable);
+        invulnerable.onInvulnerableEnd = new InvulnerableEvent();
+        invulnerable.onInvulnerableStart = new InvulnerableEvent();
+        invulnerable.onInvulnerableHit = new InvulnerableEvent();
+    }
+    private void Update()
+    {
+        invulnerables.ForEach(x => UpdateInvulnerable(x));
+    }
 
+    private void UpdateInvulnerable(IInvulnerable invulnerable)
+    {
+        float previous = invulnerable.currentInvulnerableTime;
+        invulnerable.currentInvulnerableTime -= Time.deltaTime;
+        invulnerable.currentInvulnerableCooldown -= Time.deltaTime;
+        if (previous > 0 && invulnerable.currentInvulnerableTime < 0)
+            invulnerable.onInvulnerableEnd.Invoke(invulnerable);
+    }
+
+    protected override void UnRegister(IBase b)
+    {
+        base.UnRegister(b);
+        if (b is IInvulnerable)
+            invulnerables.Remove(b as IInvulnerable);
+    }
+    public void StartInvulnerability(IInvulnerable invulnerable) {
+        if (invulnerable.currentInvulnerableCooldown > 0)
+            return;
+        invulnerable.onInvulnerableStart.Invoke(invulnerable);
+        invulnerable.currentInvulnerableCooldown = invulnerable.GetInvulnerableCooldown();
+        invulnerable.currentInvulnerableTime = invulnerable.GetInvulnerableTime();
+    }
     public void TakeDamage(Collision collision, IDamageSource damageSource)
     {
         if (collision.rigidbody == null)
             return;
         if (!collision.rigidbody.TryGetComponent(out IDamageable damageable))
             return;
+        if (IsInvulnerable(collision.rigidbody, out IInvulnerable invulnerable)) {
+            invulnerable.onInvulnerableHit.Invoke(invulnerable);
+            return;
+        }
         TakeDamage(damageable, damageSource);
+    }
+
+    private bool IsInvulnerable(Rigidbody rigidbody, out IInvulnerable invulnerable)
+    {
+        if (!rigidbody.TryGetComponent(out invulnerable))
+            return false;
+        return invulnerable.currentInvulnerableTime > 0;
     }
 
     public void TakeDamage(IDamageable damageable, IDamageSource damageSource)
@@ -137,4 +185,16 @@ public interface IDamageSource : IBase
     DamageType GetDamageType();
 }
 
+public interface IInvulnerable : IBase
+{
+    InvulnerableEvent onInvulnerableStart { get; set; }
+    InvulnerableEvent onInvulnerableEnd { get; set; }
+    InvulnerableEvent onInvulnerableHit { get; set; }
+    float GetInvulnerableTime();
+    float GetInvulnerableCooldown();
+    float currentInvulnerableTime { get; set; }
+    float currentInvulnerableCooldown { get; set; }
+}
+
 public class DamageEvent : UnityEvent<IDamageable, IDamageSource> { }
+public class InvulnerableEvent : UnityEvent<IInvulnerable> { }

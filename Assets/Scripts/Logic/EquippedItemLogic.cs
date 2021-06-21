@@ -12,12 +12,15 @@ public enum ItemType {
 public class EquippedItemLogic : InterfaceLogicBase
 {
     public static EquippedItemLogic I;
-    public List<IUsableItem> usableItems = new List<IUsableItem>();
+    private List<IUsableItem> usableItems = new List<IUsableItem>();
+    private List<IComboItem> comboItems = new List<IComboItem>();
+
     protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
         base.OnInstantiate(newInstance, newBase);
-        InitItemUser(newBase as IItemUser);
         InitUsableItem(newBase as IUsableItem);
+        InitItemUser(newBase as IItemUser);
+        InitComboItem(newBase as IComboItem);
     }
 
     private void InitItemUser(IItemUser itemUser)
@@ -40,14 +43,27 @@ public class EquippedItemLogic : InterfaceLogicBase
         usableItem.ammo = 0;
     }
 
+    private void InitComboItem(IComboItem comboItem)
+    {
+        if (comboItem == null)
+            return;
+        comboItems.Add(comboItem);
+        comboItem.onComboItemUse = new ComboItemEvent();
+    }
+
     private void Update()
     {
         usableItems.ForEach(x => UpdateUsableItem(x));
+        comboItems.ForEach(x => UpdateComboItem(x));
     }
 
     private void UpdateUsableItem(IUsableItem usableItem)
     {
         usableItem.currentItemCooldown -= Time.deltaTime;
+    }
+    private void UpdateComboItem(IComboItem comboItem)
+    {
+        comboItem.currentComboWindow -= Time.deltaTime;
     }
 
     protected override void UnRegister(IBase b)
@@ -65,7 +81,31 @@ public class EquippedItemLogic : InterfaceLogicBase
         }
         item.ammo -= 1;
         item.currentItemCooldown = item.GetItemCooldown();
+        if (item is IComboItem)
+        {
+            UseComboItem(item as IComboItem);
+            return;
+        }
+        UseItem(item);
+    }
+    public void UseItem(IUsableItem item) {
         item.onItemUse.Invoke(item);
+    }
+    public void UseComboItem(IComboItem comboItem) {
+        SetComboIndex(comboItem);
+        comboItem.currentComboWindow = comboItem.GetComboTimeWindow();
+        comboItem.onComboItemUse.Invoke(comboItem);
+    }
+    private void SetComboIndex(IComboItem comboItem)
+    {
+        if (comboItem.currentComboWindow <= 0)
+        {
+            comboItem.currentComboIndex = 0;
+            return;
+        }
+        comboItem.currentComboIndex += 1;
+        if (comboItem.currentComboIndex > comboItem.GetMaxCombo())
+            comboItem.currentComboIndex = 0;
     }
     public void Reload(IItemUser itemUser)
     {
@@ -114,7 +154,6 @@ public class EquippedItemLogic : InterfaceLogicBase
     }
     public void SwapEquippedItem(IItemUser itemUser)
     {
-        Debug.Log($"itemUser {itemUser}");
         int index = itemUser.GetUsableItems().IndexOf(itemUser.currentEquippedItem) + 1;
         SwapEquippedItem(itemUser, index);
     }
@@ -136,6 +175,14 @@ public interface IUsableItem : IBase
     UsableItemEvent onReload { get; set; }
     float currentItemCooldown { get; set; }
 }
+public interface IComboItem : IUsableItem
+{
+    int GetMaxCombo();
+    float GetComboTimeWindow();
+    int currentComboIndex { get; set; }
+    float currentComboWindow { get; set; }
+    ComboItemEvent onComboItemUse { get; set; }
+}
 public interface IItemUser : IBase
 {
     List<IUsableItem> SetUsableItems(List<IUsableItem> usableItems);
@@ -143,4 +190,5 @@ public interface IItemUser : IBase
     IUsableItem currentEquippedItem { get; set; }
 }
 public class UsableItemEvent : UnityEvent<IUsableItem> { }
+public class ComboItemEvent : UnityEvent<IComboItem> { }
 public class ItemUserEvent : UnityEvent<IItemUser> { }

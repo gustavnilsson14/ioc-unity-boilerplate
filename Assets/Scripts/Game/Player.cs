@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IAnimated, ISentient, ISkilled, IJumper, IItemUser, IInputReciever
+public class Player : BehaviourBase, IDamageable, IInventory, IAnimated, ISentient, ISkilled, IJumper, IItemUser, IInputReciever, IInvulnerable, IDodger
 {
     public int maxHealth;
     public bool test;
@@ -47,10 +47,16 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public float burstIntervalCooldown { get; set; }
     public int burstShotsLeft { get; set; }
     public JumpEvent onAirJump { get; set; }
-    public MeleeEvent onAttackStart { get; set; }
-    public MeleeEvent onAttackFinish { get; set; }
-    public float currentMeleeCooldown { get; set; }
     public IUsableItem currentEquippedItem { get; set; }
+    public InvulnerableEvent onInvulnerableStart { get; set; }
+    public InvulnerableEvent onInvulnerableEnd { get; set; }
+    public InvulnerableEvent onInvulnerableHit { get; set; }
+    public float currentInvulnerableTime { get; set; }
+    public float currentInvulnerableCooldown { get; set; }
+    public float currentDashCooldown { get; set; }
+    public float currentDashDuration { get; set; }
+    public DashEvent onDashStart { get; set; }
+    public DashEvent onDashEnd { get; set; }
 
     public Disposition GetInitialDisposition() => new Disposition(0.5f, 0.5f, 0.5f);
 
@@ -72,10 +78,6 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
 
     public float GetGravityMultiplier() => gravityMultiplier;
 
-    public float GetDamageDelay() => 1;
-
-    public SphereCollider GetDamageCollider() => damageCollider;
-
     public float GetBurstRate() => burstRate;
 
     public int GetBurstAmount() => burstAmount;
@@ -91,8 +93,6 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public SpawnMode GetSpawnMode() => projectileSpawnMode;
 
     public bool testAdd = false;
-    public bool testMelee = false;
-    public bool testShoot = false;
     public bool testSpend = false;
     public bool testMoveTo = false;
     public bool testDisposition = false;
@@ -130,14 +130,14 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public float projectileSpread;
     public List<Skill> skills = new List<Skill>();
     public List<IUsableItem> usableItems;
+    public float invulnerableTime;
+    public float invulnerableCooldown;
+    public float dashSpeedMultiplier;
+    public float dashCooldown;
+    public float dashDuration;
 
     private void Update()
     {
-        if (testMelee)
-        {
-            testMelee = false;
-            MeleeLogic.I.Attack(this);
-        }
         if (testSpend)
         {
             testSpend = false;
@@ -169,15 +169,13 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
         }
         if (test) {
             test = false;
-            DamageLogic.I.TakeDamage(this, this);
+            DamageLogic.I.TakeDamage(this as IDamageable, this as IDamageSource);
         }
     }
 
     public List<InputMapping> GetInputMappings() => inputMappings;
 
     public List<AxisMapping> GetAxisMappings() => axisMappings;
-
-    public float GetMeleeCooldown() => meleeCooldown;
 
     public bool GetRotateTowardsMouse() => rotateTowardsMouse;
 
@@ -188,4 +186,13 @@ public class Player : BehaviourBase, IDamageable, IMeleeAttacker, IInventory, IA
     public List<IUsableItem> GetUsableItems() => usableItems;
 
     public List<IUsableItem> SetUsableItems(List<IUsableItem> usableItems) => this.usableItems = usableItems;
+
+    public float GetInvulnerableTime() => invulnerableTime;
+
+    public float GetInvulnerableCooldown() => invulnerableCooldown;
+
+    public float GetDashSpeedMultiplier() => dashSpeedMultiplier;
+
+    public float GetDashCooldown() => dashCooldown;
+    public float GetDashDuration() => dashDuration;
 }

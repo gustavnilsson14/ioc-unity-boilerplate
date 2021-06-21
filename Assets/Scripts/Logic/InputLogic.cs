@@ -7,13 +7,12 @@ using UnityEngine.Events;
 
 public enum InputType
 {
-    SHOOT,
     JUMP,
-    MELEE,
     OPEN_INVENTORY,
     SWAP_ITEM,
     RELOAD,
-    USE_ITEM
+    USE_ITEM,
+    DASH
 }
 public enum AxisType
 {
@@ -68,10 +67,22 @@ public class InputLogic : InterfaceLogicBase
         {
             HandleMoverInput(inputReciever);
             HandleJumperInput(inputReciever);
-            HandleMeleeInput(inputReciever);
             HandleSwapItemInput(inputReciever);
             HandleReloadInput(inputReciever);
             HandleUseItemInput(inputReciever);
+            HandleDashInput(inputReciever);
+        }
+    }
+
+    private void HandleDashInput(IInputReciever inputReciever)
+    {
+        if (!(inputReciever is IDasher))
+            return;
+        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.DASH))
+        {
+            if (!GetInput(inputMapping))
+                continue;
+            MovementLogic.I.Dash(inputReciever as IDasher);
         }
     }
 
@@ -137,19 +148,6 @@ public class InputLogic : InterfaceLogicBase
             if (!GetInput(inputMapping))
                 continue;
             JumpLogic.I.Jump(inputReciever as IJumper);
-        }
-
-    }
-
-    private void HandleMeleeInput(IInputReciever inputReciever)
-    {
-        if (!(inputReciever is IMeleeAttacker))
-            return;
-        foreach (InputMapping inputMapping in inputReciever.GetInputMappings().FindAll(x => x.inputType == InputType.MELEE))
-        {
-            if (!GetInput(inputMapping))
-                continue;
-            MeleeLogic.I.Attack(inputReciever as IMeleeAttacker);
         }
 
     }
