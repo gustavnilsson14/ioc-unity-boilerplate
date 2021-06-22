@@ -36,7 +36,6 @@ public class MovementLogic : InterfaceLogicBase
             mover.GetGameObject().AddComponent(typeof(Rigidbody));
     }
 
-
     private void InitDollyMover(IDollyMover dollyMover)
     {
         if (dollyMover == null)
@@ -63,13 +62,11 @@ public class MovementLogic : InterfaceLogicBase
     }
     protected override void UnRegister(IBase b)
     {
-        base.UnRegister(b);
-        if (b is IMover)
-            movers.Remove(b as IMover);
-        if (b is IDollyMover)
-            dollyMovers.Remove(b as IDollyMover);
-        if (b is IDasher)
-            dashers.Remove(b as IDasher);
+        base.UnRegister(b, new List<IList>() {
+            movers,
+            dollyMovers,
+            dashers
+        });
     }
 
     void Update()

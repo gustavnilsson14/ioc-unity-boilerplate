@@ -29,6 +29,7 @@ public class DamageLogic : InterfaceLogicBase
         damageable.onArmorBroken = new DamageEvent();
         damageable.onArmorHit= new DamageEvent();
         damageable.onDeath = new DamageEvent();
+        Debug.Log(damageable);
         damageable.onHit = new DamageEvent();
         damageable.onResist = new DamageEvent();
     }

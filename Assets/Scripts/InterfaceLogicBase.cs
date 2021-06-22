@@ -28,13 +28,16 @@ public class InterfaceLogicBase : MonoBehaviour
         PostStart();
     }
 
-    protected virtual void PostStart() {  }
+    protected virtual void PostStart() { }
 
     protected virtual void RegisterInstances() { }
 
-    protected virtual void RegisterListeners() {
+    protected virtual void RegisterListeners()
+    {
         PrefabFactory.I.onInstantiate.AddListener(OnInstantiate);
+        PrefabFactory.I.onRegisterInternalListeners.AddListener(OnRegisterInternalListeners);
     }
+
     protected virtual void OnInstantiate(GameObject newInstance)
     {
         if (!newInstance.TryGetComponent(out IBase newBase))
@@ -53,9 +56,28 @@ public class InterfaceLogicBase : MonoBehaviour
         newBase.onDestroy.AddListener(UnRegister);
     }
 
+    protected virtual void OnRegisterInternalListeners(GameObject newInstance)
+    {
+        if (newInstance == null)
+            return;
+        if (!newInstance.TryGetComponent(out IBase newBase))
+            return;
+        OnRegisterInternalListeners(newBase);
+    }
+    protected virtual void OnRegisterInternalListeners(IBase newBase)
+    {
+    }
+
     protected virtual void UnRegister(IBase b)
     {
+        UnRegister(b, null);
+    }
+    protected virtual void UnRegister(IBase b, List<IList> instanceLists)
+    {
         myInstances.Remove(b.GetGameObject());
+        if (instanceLists == null)
+            return;
+        instanceLists.ForEach(x => x.Remove(b));
     }
 }
 
