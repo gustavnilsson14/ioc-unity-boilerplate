@@ -19,6 +19,7 @@ public class MovementLogic : InterfaceLogicBase
         InitMover(newBase as IMover);
         InitDollyMover(newBase as IDollyMover);
         InitDasher(newBase as IDasher);
+        InitDodger(newBase as IDodger);
     }
 
     private void InitMover(IMover mover)
@@ -54,6 +55,12 @@ public class MovementLogic : InterfaceLogicBase
         dasher.onDashStart = new DashEvent();
     }
 
+    private void InitDodger(IDodger dodger)
+    {
+        if (dodger == null)
+            return;
+        dodger.onDodgeStart = new DodgeEvent();
+    }
     protected override void UnRegister(IBase b)
     {
         base.UnRegister(b);
@@ -116,13 +123,32 @@ public class MovementLogic : InterfaceLogicBase
         DidMoverStop(mover);
         DidMoverStart(mover);
         mover.previousMovementVector = mover.movementVector;
-        if (mover.movementVector == Vector3.zero)
-        {
+        if (!TryGetMovementVector(mover, out Vector3 movementVector))
             return;
-        }
         Rigidbody rigidbody = mover.GetGameObject().GetComponent<Rigidbody>();
-        rigidbody.MovePosition(rigidbody.transform.position + (mover.movementVector * GetSpeed(mover) * Time.deltaTime));
+        rigidbody.MovePosition(rigidbody.transform.position + (movementVector * GetSpeed(mover) * Time.deltaTime));
         mover.onMove.Invoke(mover);
+    }
+
+    private bool TryGetMovementVector(IMover mover, out Vector3 movementVector)
+    {
+        movementVector = mover.movementVector;
+        if (TryGetDashVector(mover as IDasher, out Vector3 dashVector))
+            movementVector = dashVector;
+        if (movementVector == Vector3.zero)
+            return false;
+        return true;
+    }
+
+    private bool TryGetDashVector(IDasher dasher, out Vector3 dashVector)
+    {
+        dashVector = Vector3.zero;
+        if (dasher == null)
+            return false;
+        if (dasher.currentDashDuration <= 0)
+            return false;
+        dashVector = dasher.dashVector;
+        return true;
     }
 
     public void MoveTo(IMover mover, Vector3 destination)
@@ -178,10 +204,20 @@ public class MovementLogic : InterfaceLogicBase
     public void Dash(IDasher dasher) {
         if (dasher.currentDashCooldown > 0)
             return;
-        if (dasher is IDodger)
-            DamageLogic.I.StartInvulnerability(dasher as IDodger);
+        if (dasher.movementVector == Vector3.zero)
+            return;
+        HandleDodge(dasher as IDodger);
         dasher.currentDashCooldown = dasher.GetDashCooldown();
         dasher.currentDashDuration = dasher.GetDashDuration();
+        dasher.dashVector = dasher.movementVector;
+    }
+
+    private void HandleDodge(IDodger dodger)
+    {
+        if (dodger == null)
+            return;
+        DamageLogic.I.StartInvulnerability(dodger);
+        dodger.onDodgeStart.Invoke(dodger);
     }
 
     public float GetSpeed(IMover mover) {
@@ -227,12 +263,16 @@ public interface IDasher : IMover
     float GetDashSpeedMultiplier();
     float GetDashCooldown();
     float GetDashDuration();
+    Vector3 dashVector { get; set; }
     float currentDashCooldown { get; set; }
     float currentDashDuration { get; set; }
     DashEvent onDashStart { get; set; }
     DashEvent onDashEnd { get; set; }
 }
-public interface IDodger : IDasher, IInvulnerable { }
+public interface IDodger : IDasher, IInvulnerable {
+    DodgeEvent onDodgeStart { get; set; }
+}
 public class MoveEvent : UnityEvent<IMover> { }
 public class DashEvent : UnityEvent<IDasher> { }
+public class DodgeEvent : UnityEvent<IDodger> { }
 public class DollyMoveEvent : UnityEvent<IDollyMover> { }

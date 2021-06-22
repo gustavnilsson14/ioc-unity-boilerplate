@@ -1151,15 +1151,5 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2024611885591177555, guid: 01b5db5995541ae429bb9902beaa7202,
-        type: 3}
-      propertyPath: invulnerableTime
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 2024611885591177555, guid: 01b5db5995541ae429bb9902beaa7202,
-        type: 3}
-      propertyPath: invulnerableCooldown
-      value: 2.5
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01b5db5995541ae429bb9902beaa7202, type: 3}

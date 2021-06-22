@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class Player : BehaviourBase, IDamageable, IInventory, IAnimated, ISentient, ISkilled, IJumper, IItemUser, IInputReciever, IInvulnerable, IDodger
+public class Player : BehaviourBase, IDamageable, IInventory, IAnimated, ISentient, ISkilled, IJumper, IItemUser, IInputReciever, IDodger
 {
     public int maxHealth;
     public bool test;
@@ -57,6 +57,8 @@ public class Player : BehaviourBase, IDamageable, IInventory, IAnimated, ISentie
     public float currentDashDuration { get; set; }
     public DashEvent onDashStart { get; set; }
     public DashEvent onDashEnd { get; set; }
+    public Vector3 dashVector { get; set; }
+    public DodgeEvent onDodgeStart { get; set; }
 
     public Disposition GetInitialDisposition() => new Disposition(0.5f, 0.5f, 0.5f);
 
