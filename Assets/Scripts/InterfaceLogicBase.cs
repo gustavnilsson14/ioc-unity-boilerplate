@@ -53,7 +53,6 @@ public class InterfaceLogicBase : MonoBehaviour
         newBase.uniqueId = newInstance.GetInstanceID();
         newBase.onDestroy = new DestroyEvent();
         newBase.onCollision = new CollisionEvent();
-        newBase.onDestroy.AddListener(UnRegister);
     }
 
     protected virtual void OnRegisterInternalListeners(GameObject newInstance)
@@ -62,10 +61,11 @@ public class InterfaceLogicBase : MonoBehaviour
             return;
         if (!newInstance.TryGetComponent(out IBase newBase))
             return;
-        OnRegisterInternalListeners(newBase);
+        newInstance.GetComponents<IBase>().ToList().ForEach(x => OnRegisterInternalListeners(newInstance, x));
     }
-    protected virtual void OnRegisterInternalListeners(IBase newBase)
+    protected virtual void OnRegisterInternalListeners(GameObject newInstance, IBase newBase)
     {
+        newBase.onDestroy.AddListener(UnRegister);
     }
 
     protected virtual void UnRegister(IBase b)

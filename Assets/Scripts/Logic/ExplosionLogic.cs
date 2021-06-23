@@ -18,15 +18,17 @@ public class ExplosionLogic : InterfaceLogicBase
         InitTimedExplosive(newBase as ITimedExplosive);
         InitContactExplosive(newBase as IContactExplosive);
     }
-    protected override void OnRegisterInternalListeners(IBase newBase)
+    protected override void OnRegisterInternalListeners(GameObject newInstance, IBase newBase)
     {
-        RegisterExplosiveInternalListeners(newBase as IExplosive);
+        base.OnRegisterInternalListeners(newInstance, newBase);
+        ExplosiveInternalListeners(newBase as IExplosive);
     }
-    private void RegisterExplosiveInternalListeners(IExplosive explosive)
+    private void ExplosiveInternalListeners(IExplosive explosive)
     {
         if (explosive == null)
             return;
-        explosive.onHit.AddListener(Detonate);
+        if (explosive is IDamageable)
+            (explosive as IDamageable).onHit.AddListener(Detonate);
     }
 
     private void InitExplosive(IExplosive explosive)
@@ -34,6 +36,7 @@ public class ExplosionLogic : InterfaceLogicBase
         if (explosive == null)
             return;
         explosive.onExplosiveDetonation = new ExplosiveEvent();
+        explosive.onExplosiveDetonationImminent = new ExplosiveEvent();
     }
     private void InitTimedExplosive(ITimedExplosive timedExplosive)
     {
@@ -100,9 +103,10 @@ public class ExplosionLogic : InterfaceLogicBase
         StartCoroutine(ExplosionEffect(explosive));
     }
 
-    private IEnumerator ExplosionEffect(IExplosive explosive, float delay = 1)
+    private IEnumerator ExplosionEffect(IExplosive explosive)
     {
-        yield return new WaitForSeconds(delay);
+        explosive.onExplosiveDetonationImminent.Invoke(explosive);
+        yield return new WaitForSeconds(explosive.GetWarningTime());
         List<Collider> hits = Physics.OverlapSphere(explosive.GetGameObject().transform.position, explosive.GetShockRadius()).ToList();
         hits.ForEach(x => ApplyExplosionToHit(explosive, x));
         GameObject instance = Instantiate(explosionPrefabs[0], explosive.GetGameObject().transform.position, explosive.GetGameObject().transform.rotation);
@@ -124,12 +128,14 @@ public class ExplosionLogic : InterfaceLogicBase
         DamageLogic.I.TakeDamage(damageable, explosive);
     }
 }
-public interface IExplosive : IDamageSource, IDamageable, IAnimated
+public interface IExplosive : IDamageSource
 {
     float GetShockForce();
     float GetShockRadius();
     float GetDamageFalloffMultiplier();
+    float GetWarningTime();
     ExplosiveEvent onExplosiveDetonation { get; set; }
+    ExplosiveEvent onExplosiveDetonationImminent { get; set; }
 }
 public interface ITimedExplosive : IExplosive
 {

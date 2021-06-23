@@ -54,6 +54,7 @@ public class ResourceLogic : InterfaceLogicBase
         if (resource == null)
             return;
         resource.onChange = new ResourceEvent();
+        resource.resourceType = resourceTypes.Find(x => x.resourceType == resource.GetResourceType());
     }
     private void InitResourceConverter(IResourceConverter resourceConverter)
     {
@@ -159,7 +160,7 @@ public class ResourceLogic : InterfaceLogicBase
     }
     private bool InventoryContains(IInventory inventory, ResourceType resourceType, int amount)
     {
-        return amount < inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType).Sum(x => x.amount);
+        return amount < inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType).Sum(x => x.GetAmount());
     }
 
 
@@ -219,11 +220,9 @@ public class ResourceLogic : InterfaceLogicBase
         return newStack;
     }
 
-
-
     public void AddResourceToInventory(ResourceType resourceType, int amount, IInventory inventory)
     {
-        List<IResource> existingStacks = inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType && x.amount < x.resourceType.maxStackAmount);
+        List<IResource> existingStacks = inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType && x.GetAmount() < x.resourceType.maxStackAmount);
         existingStacks.ForEach(x => AddToStack(x, ref amount));
         if (amount == 0)
             return;
@@ -236,9 +235,9 @@ public class ResourceLogic : InterfaceLogicBase
     }
     public void MoveResourceToInventory(IResource resource, IInventory inventory)
     {
-        List<IResource> existingStacks = inventory.GetResources().FindAll(x => x.resourceType.resourceType == resource.resourceType.resourceType && x.amount < x.resourceType.maxStackAmount);
+        List<IResource> existingStacks = inventory.GetResources().FindAll(x => x.resourceType.resourceType == resource.resourceType.resourceType && x.GetAmount() < x.resourceType.maxStackAmount);
         existingStacks.ForEach(x => AddToStack(x, resource));
-        if (resource.amount == 0)
+        if (resource.GetAmount() == 0)
             return;
         SetResourceInInventory(resource, inventory);
     }
@@ -259,7 +258,7 @@ public class ResourceLogic : InterfaceLogicBase
         resource.GetGameObject().transform.parent = unclaimedContainer;
         List<IResource> existingResources = GetResourcesInRange(resource, resource.GetGameObject().transform.position);
         int iterations = 99;
-        while (resource.amount > 0 && existingResources.Count > 0 && iterations > 0)
+        while (resource.GetAmount() > 0 && existingResources.Count > 0 && iterations > 0)
         {
             iterations--;
             AddToStack(existingResources[0], resource);
@@ -284,7 +283,7 @@ public class ResourceLogic : InterfaceLogicBase
 
     public int GetResourceTotal(IInventory inventory, ResourceType resourceType)
     {
-        return inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType).Sum(x => x.amount);
+        return inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType).Sum(x => x.GetAmount());
     }
 
     private void DropInventoryExcess(IBase inventory)
@@ -306,7 +305,7 @@ public class ResourceLogic : InterfaceLogicBase
     {
         if (amount == 0)
             return;
-        int spaceLeft = resource.resourceType.maxStackAmount - resource.amount;
+        int spaceLeft = resource.resourceType.maxStackAmount - resource.GetAmount();
         int amountAdded = Mathf.Clamp(amount, 0, spaceLeft);
         amount -= amountAdded;
         ChangeAmount(resource, amountAdded);
@@ -316,14 +315,14 @@ public class ResourceLogic : InterfaceLogicBase
     {
         if (resource == fromResource)
             return;
-        int amount = fromResource.amount;
+        int amount = fromResource.GetAmount();
         AddToStack(resource, ref amount);
-        fromResource.amount = amount;
+        fromResource.SetAmount(amount);
         CheckDestroy(fromResource);
     }
     public void ChangeAmount(IResource resource, int amount) {
         Resource resourceType = resource.resourceType;
-        resource.amount = Mathf.Clamp(resource.amount + amount, 0, resourceType.maxStackAmount);
+        resource.SetAmount(Mathf.Clamp(resource.GetAmount() + amount, 0, resourceType.maxStackAmount));
         if (resource.onChange == null)
             return;
         resource.onChange.Invoke(resource, amount);
@@ -331,7 +330,7 @@ public class ResourceLogic : InterfaceLogicBase
     }
     private void CheckDestroy(IResource resource)
     {
-        if (resource.amount > 0)
+        if (resource.GetAmount() > 0)
             return;
         if (!resource.DestroyOnEmpty())
             return;
@@ -340,11 +339,11 @@ public class ResourceLogic : InterfaceLogicBase
     }
     public bool SpendResources(IInventory inventory, ResourceType resourceType, int amount) {
         List<IResource> availableResources = inventory.GetResources().FindAll(x => x.resourceType.resourceType == resourceType);
-        if (amount > availableResources.Sum(x => x.amount))
+        if (amount > availableResources.Sum(x => x.GetAmount()))
             return false;
         foreach (IResource resource in availableResources)
         {
-            int payment = Mathf.Clamp(amount, 0, resource.amount);
+            int payment = Mathf.Clamp(amount, 0, resource.GetAmount());
             amount -= payment;
             ChangeAmount(resource, -payment);
         }
@@ -390,8 +389,11 @@ public interface IInventory : IBase
 public interface IResource : IBase
 {
     ResourceLogic.Resource resourceType { get; set; }
-    int amount { get; set; }
+    int GetAmount();
+    int SetAmount(int amount);
     bool DestroyOnEmpty();
+    ResourceType GetResourceType();
+
     ResourceEvent onChange { get; set; }
     bool isClaimed { get; set; }
 }

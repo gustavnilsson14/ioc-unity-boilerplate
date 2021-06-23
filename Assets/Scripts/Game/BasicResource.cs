@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class BasicResource : BehaviourBase, IResource
 {
-    public int amount { get; set; }
+    public ResourceType resType;
+    public int amount;
     public ResourceEvent onChange { get; set; }
     public bool isClaimed { get; set; }
     public bool DestroyOnEmpty() => true;
@@ -19,4 +20,10 @@ public class BasicResource : BehaviourBase, IResource
         test = false;
         ResourceLogic.I.MoveResourceToInventory(this,inventory.GetComponent<IInventory>());
     }
+
+    public int GetAmount() => amount;
+
+    public int SetAmount(int amount) => this.amount = amount;
+
+    public ResourceType GetResourceType() => resType;
 }

@@ -18,6 +18,7 @@ public class BasicExplosive : BehaviourBase, ITimedExplosive
     public DamageEvent onResist { get; set; }
     public DamageEvent onDeath { get; set; }
     public Animator animator { get; set; }
+    public ExplosiveEvent onExplosiveDetonationImminent { get; set; }
 
     public int GetDamage() => 5;
 
@@ -29,13 +30,16 @@ public class BasicExplosive : BehaviourBase, ITimedExplosive
 
     public int GetMaxHealth() => 99;
 
-    public float GetShockForce() => 1000;
+    public float GetShockForce() => shockForce;
 
-    public float GetShockRadius() => 10;
+    public float GetShockRadius() => shockRadius;
 
     public float GetTimeToDetonate() => 5;
 
     public bool test = false;
+    public float shockForce = 1000;
+    public float shockRadius = 5;
+
     void Update()
     {
         if (test)
@@ -44,4 +48,11 @@ public class BasicExplosive : BehaviourBase, ITimedExplosive
             ExplosionLogic.I.StartTimedCountdown(this);
         }
     }
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = (new Color(0.1f * (GetShockForce()/500), 0, 0, 0.5f));
+        Gizmos.DrawSphere(transform.position, GetShockRadius());
+    }
+
+    public float GetWarningTime() => 1;
 }
