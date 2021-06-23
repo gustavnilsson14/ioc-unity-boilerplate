@@ -9,6 +9,7 @@ public class ExplosionLogic : InterfaceLogicBase
 {
     public static ExplosionLogic I;
     private List<ITimedExplosive> timedExplosives = new List<ITimedExplosive>();
+    public List<GameObject> explosionPrefabs = new List<GameObject>();
 
     protected override void OnInstantiate(GameObject newInstance, IBase newBase)
     {
@@ -89,15 +90,26 @@ public class ExplosionLogic : InterfaceLogicBase
 
     private void Detonate(IDamageable explosive, IDamageSource arg1)
     {
+        explosive.alive = false;
         Detonate(explosive as IExplosive);
     }
     private void Detonate(IExplosive explosive)
     {
+        if (explosive is ITimedExplosive)
+            (explosive as ITimedExplosive).isCountingDown = false;
+        StartCoroutine(ExplosionEffect(explosive));
+    }
+
+    private IEnumerator ExplosionEffect(IExplosive explosive, float delay = 1)
+    {
+        yield return new WaitForSeconds(delay);
         List<Collider> hits = Physics.OverlapSphere(explosive.GetGameObject().transform.position, explosive.GetShockRadius()).ToList();
         hits.ForEach(x => ApplyExplosionToHit(explosive, x));
-        if (!(explosive is ITimedExplosive))
-            return;
-        (explosive as ITimedExplosive).isCountingDown = false;
+        GameObject instance = Instantiate(explosionPrefabs[0], explosive.GetGameObject().transform.position, explosive.GetGameObject().transform.rotation);
+        Destroy(explosive.GetGameObject(), 0.01f);
+        yield return new WaitForSeconds(5);
+        Destroy(instance);
+        
     }
 
     private void ApplyExplosionToHit(IExplosive explosive, Collider collider)
