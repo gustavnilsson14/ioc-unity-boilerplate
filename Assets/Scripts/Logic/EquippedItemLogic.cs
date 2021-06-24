@@ -68,9 +68,9 @@ public class EquippedItemLogic : InterfaceLogicBase
 
     protected override void UnRegister(IBase b)
     {
-        base.UnRegister(b);
-        if (b is IUsableItem)
-            usableItems.Remove(b as IUsableItem);
+        base.UnRegister(b, new List<IList>() {
+            usableItems
+        });
     }
     public void Use(IItemUser itemUser) {
         IUsableItem item = itemUser.currentEquippedItem;

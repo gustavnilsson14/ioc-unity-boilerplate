@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BasicExplosive : BehaviourBase, ITimedExplosive
+public class BasicExplosive : BehaviourBase, ITimedExplosive, IDamageable
 {
     public float currentTimeToDetonate { get; set; }
     public bool isCountingDown { get; set; }

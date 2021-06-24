@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
-public class BasicMeleeWeapon : BehaviourBase, IMeleeWeapon
+public class BasicMeleeWeapon : BehaviourBase, IMeleeWeapon, IPromptPickup, IWorldText
 {
     public int damage;
     public DamageType damageType;
@@ -12,6 +13,7 @@ public class BasicMeleeWeapon : BehaviourBase, IMeleeWeapon
     public int maxCombo;
     public MeleeWeaponType meleeWeaponType;
     public float comboTimeWindow;
+    public string worldText;
 
     public int ammo { get; set; }
     public UsableItemEvent onItemUse { get; set; }
@@ -23,6 +25,14 @@ public class BasicMeleeWeapon : BehaviourBase, IMeleeWeapon
     public int currentComboIndex { get; set; }
     public float currentComboWindow { get; set; }
     public ComboItemEvent onComboItemUse { get; set; }
+    public PromptPickupEvent onPromptShow { get; set; }
+    public PromptPickupEvent onPromptHide { get; set; }
+    public bool isHeld { get; set; }
+    public PickupEvent onPickupPickup { get; set; }
+    public PickupEvent onPickupDrop { get; set; }
+    public WorldTextEvent onWorldTextShow { get; set; }
+    public WorldTextEvent onWorldTextHide { get; set; }
+    public TextMeshPro textContainer { get; set; }
 
     public int GetAmmoCapacity() => 0;
 
@@ -46,5 +56,11 @@ public class BasicMeleeWeapon : BehaviourBase, IMeleeWeapon
 
     public MeleeWeaponType GetMeleeWeaponType() => meleeWeaponType;
 
+    public PickupType GetPickupType() => PickupType.USABLE_ITEM;
+
     public bool GetUsesAmmo() => false;
+
+    public string GetWorldText() => worldText;
+
+    public string SetWorldText(string text) => worldText = text;
 }

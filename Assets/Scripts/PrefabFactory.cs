@@ -39,5 +39,19 @@ public class PrefabFactory : InterfaceLogicBase
         onRegisterInternalListeners.Invoke(newGameObject);
         
     }
+
+
+
+    public float deltaTimeLimit;
+    public bool logDeltaTimeLimit = false;
+    private void Update()
+    {
+        if (!logDeltaTimeLimit)
+            return;
+        if (Time.deltaTime < deltaTimeLimit)
+            return;
+        Debug.LogError($"over limit!!! {Time.deltaTime}");
+        Debug.Break();
+    }
 }
 public class InstantiateEvent : UnityEvent<GameObject> { }
